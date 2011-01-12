@@ -50,12 +50,12 @@ end
 
 def google_compiler(src, target)
   puts "Minifying #{src} with Google Closure Compiler..."
-  `java -jar vendor/google-compiler/compiler.jar --js #{src} --summary_detail_level 3 --js_output_file #{target}`
+  `java6 -jar vendor/google-compiler/compiler.jar --js #{src} --summary_detail_level 3 --js_output_file #{target}`
 end
 
 def yui_compressor(src, target)
   puts "Minifying #{src} with YUI Compressor..."
-  `java -jar vendor/yuicompressor/yuicompressor-2.4.2.jar #{src} -o #{target}`
+  `java6 -jar vendor/yuicompressor/yuicompressor-2.4.2.jar #{src} -o #{target}`
 end
 
 def process_minified(src, target)
