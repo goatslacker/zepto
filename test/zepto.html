@@ -3,9 +3,17 @@
 <head>
   <meta charset="utf-8">
   <title>Zepto DOM unit tests</title>
+  <script src="../src/compat.js"></script>
   <script src="../src/zepto.js"></script>
   <script src="../src/event.js"></script>
   <script src="../vendor/evidence.js"></script>
+  <!--<script src="../dist/zepto.min.js"></script>-->
+  <style>
+    #get_style_element {
+      font-size: 48px;
+      color: black;
+    }
+  </style>
 </head>
 <body>
   <h1>Zepto DOM unit tests</h1>
@@ -20,6 +28,10 @@
   </p>
 
   <div id="toggle_element"></div>
+
+  <div id="get_style_wrapper" style="font-size: 16px;">
+    <div id="get_style_element">Derp</div>
+  </div>
 
   <div id="attr_1" data-id="someId1" data-name="someName1"></div>
   <div id="attr_2" data-id="someId2" data-name="someName2"></div>
@@ -443,6 +455,10 @@
         t.assertEqual('rgb(0, 0, 0)', $('#some_element').css('border-left-color'));
         t.assertEqual('rgb(0, 255, 0)', $('#some_element').css('color'));
         t.assertEqual('2px', $('#some_element').css('padding-left'));
+
+        var div = $('#get_style_element');
+        t.assertEqual('48px', div.css('font-size'));
+        t.assertEqual('rgb(0, 0, 0)', div.css('color'));
       },
 
       testHtml: function(t){
@@ -460,6 +476,19 @@
         t.assertEqual("", $('#htmltest3').html());
 
         t.assertNull($('doesnotexist').html());
+
+        div.html('yowza');
+        div.html(function(idx, html){
+          return html.toUpperCase();
+        });
+        t.assertEqual('YOWZA', div.html());
+
+        div.html('<u>a</u><u>b</u><u>c</u>');
+
+        $('u').html(function(idx,html){
+          return idx+html;
+        });
+        t.assertEqual('<u>0a</u><u>1b</u><u>2c</u>', div.html());
       },
 
       testText: function(t){
@@ -651,6 +680,15 @@
         t.assertEqual(2, count);
       },
 
+      testOne: function(t){
+        var counter = 0;
+        $(document.body).one('click', function(){ counter++ });
+        click($('#some_element').get(0));
+        t.assertEqual(1, counter);
+        click($('#some_element').get(0));
+        t.assertEqual(1, counter);
+      },
+
       testAttr: function(t){
         var els = $('#attr_1, #attr_2');
 
@@ -678,6 +716,12 @@
         t.assertEqual('id', els.attr("data-id"));
         t.assertEqual('name', els.attr("data-name"));
         t.assertEqual('id', $('#attr_2').attr('data-id'));
+
+        els.attr('data-id', function(idx,oldvalue){
+          return idx+oldvalue;
+        });
+        t.assertEqual('0id', els.attr('data-id'));
+        t.assertEqual('1id', $('#attr_2').attr('data-id'));
       },
 
       testAttrOnInputFieldWithTypeOfText: function(t) {
@@ -689,6 +733,32 @@
         els.attr('value', '');
         t.assertEqual(els.get(0).value, els.attr('value'));
         t.assertEqual('', els.attr('value'));
+      },
+
+      testRemoveAttr: function(t) {
+        var els = $('#attr_with_text_input');
+
+        els.get(0).removeAttribute('disabled');
+        t.assertEqual(els.attr('disabled'), undefined);
+
+        els.attr('disabled', 'definitely');
+        t.assertEqual(els.attr('disabled'), 'definitely');
+
+        els.removeAttr('disabled');
+        t.assertEqual(els.attr('disabled'), undefined);
+      },
+
+      testVal: function(t) {
+        var els = $('#attr_with_text_input');
+
+        els.get(0).value = "Hello World";
+
+        t.assertEqual(els.get(0).value, els.val());
+        t.assertEqual('Hello World', els.val());
+
+        els.val('');
+        t.assertEqual(els.get(0).value, els.val());
+        t.assertEqual('', els.val());
 
       },
 
@@ -747,6 +817,39 @@
         t.assertEqual(
           '<div>before</div><div id="beforeafter"><div>prepend</div>'+
           '<div>append</div></div><div>after</div>',
+          $('#beforeafter_container').html()
+        );
+
+        //testing with Zepto object as parameter
+        $('#beforeafter_container').html('<div id="beforeafter"></div>');
+
+        $('#beforeafter').append($(div('append')));
+        $('#beforeafter').prepend($(div('prepend')));
+        $('#beforeafter').before($(div('before')));
+        $('#beforeafter').after($(div('after')));
+
+        t.assertEqual(
+          '<div>before</div><div id="beforeafter"><div>prepend</div>'+
+          '<div>append</div></div><div>after</div>',
+          $('#beforeafter_container').html()
+        );
+
+        //testing with a zepto object of more than one element as parameter
+        $(document.body).append('<div class="append">append1</div><div class="append">append2</div>');
+        $(document.body).append('<div class="prepend">prepend1</div><div class="prepend">prepend2</div>');
+        $(document.body).append('<div class="before">before1</div><div class="before">before2</div>');
+        $(document.body).append('<div class="after">after1</div><div class="after">after2</div>');
+
+        $('#beforeafter_container').html('<div id="beforeafter"></div>');
+
+        $('#beforeafter').append($('.append'));
+        $('#beforeafter').prepend($('.prepend'));
+        $('#beforeafter').before($('.before'));
+        $('#beforeafter').after($('.after'));
+
+        t.assertEqual(
+          '<div class="before">before1</div><div class="before">before2</div><div id="beforeafter"><div class="prepend">prepend1</div><div class="prepend">prepend2</div>'+
+          '<div class="append">append1</div><div class="append">append2</div></div><div class="after">after1</div><div class="after">after2</div>',
           $('#beforeafter_container').html()
         );
       },

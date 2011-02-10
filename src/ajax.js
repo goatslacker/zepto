@@ -1,5 +1,4 @@
 (function($){
-
   var jsonpID = 0;
 
   function empty() {}
@@ -7,9 +6,12 @@
   $.ajaxJSONP = function(options){
     var jsonpString;
     jsonpString = 'jsonp' + ++jsonpID;
-    window[jsonpString] = options.success;
+    window[jsonpString] = function(data){
+      options.success(data);
+      delete window.jsonpString;
+    };
     var script = document.createElement('script');
-    $(script).attr({ src: options.url.replace(/callback=\?/, 'callback=' + jsonpString) });
+    $(script).attr({ src: options.url.replace(/=\?/, '=' + jsonpString) });
     $('head').append(script);
   };
 
@@ -17,7 +19,7 @@
     // { type, url, data, success, dataType, contentType }
     options = options || {};
 
-    if (options.url && /callback=\?/.test(options.url))
+    if (options.url && /=\?/.test(options.url))
       return $.ajaxJSONP(options);
 
     var data = options.data,
@@ -69,7 +71,7 @@
   $.getJSON = function(url, success){ $.ajax({ url: url, success: success, dataType: 'json' }) };
 
   $.fn.load = function(url, success){
-    if (!this.dom.length) return this;
+    if (!this.length) return this;
     var self = this, parts = url.split(/\s/), selector;
     if (parts.length > 1) url = parts[0], selector = parts[1];
     $.get(url, function(response){

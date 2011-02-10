@@ -1,7 +1,7 @@
 require 'rake'
 require 'rake/packagetask'
 
-ZEPTO_VERSION  = "0.3"
+ZEPTO_VERSION  = "0.4"
 
 ZEPTO_ROOT     = File.expand_path(File.dirname(__FILE__))
 ZEPTO_SRC_DIR  = File.join(ZEPTO_ROOT, 'src')
@@ -9,6 +9,7 @@ ZEPTO_DIST_DIR = File.join(ZEPTO_ROOT, 'dist')
 ZEPTO_PKG_DIR  = File.join(ZEPTO_ROOT, 'pkg')
 
 ZEPTO_FILES    = [
+  File.join(ZEPTO_SRC_DIR,'compat.js'),
   File.join(ZEPTO_SRC_DIR,'zepto.js'),
   File.join(ZEPTO_SRC_DIR,'event.js'),
   File.join(ZEPTO_SRC_DIR,'detect.js'),
@@ -58,6 +59,22 @@ def yui_compressor(src, target)
   `java6 -jar vendor/yuicompressor/yuicompressor-2.4.2.jar #{src} -o #{target}`
 end
 
+def uglifyjs(src, target)
+  begin
+    require 'uglifier'
+  rescue LoadError => e
+    if verbose
+      puts "\nYou'll need the 'uglifier' gem for minification. Just run:\n\n"
+      puts "  $ gem install uglifier"
+      puts "\nand you should be all set.\n\n"
+      exit
+    end
+    return false
+  end
+  puts "Minifying #{src} with UglifyJS..."
+  File.open(target, "w"){|f| f.puts Uglifier.new.compile(File.read(src))}
+end
+
 def process_minified(src, target)
   cp target, File.join(ZEPTO_DIST_DIR,'temp.js')
   msize = File.size(File.join(ZEPTO_DIST_DIR,'temp.js'))
@@ -72,8 +89,15 @@ def process_minified(src, target)
   puts "Minified and gzipped: %.3fk, compression factor %.3f" % [dsize/1024.0, osize/dsize.to_f]
 end
 
-desc "Generates a minified version for distribution."
+desc "Generates a minified version for distribution, using UglifyJS."
 task :dist do
+  src, target = File.join(ZEPTO_DIST_DIR,'zepto.js'), File.join(ZEPTO_DIST_DIR,'zepto.min.js')
+  uglifyjs src, target
+  process_minified src, target
+end
+
+desc "Generates a minified version for distribution using the Google Closure compiler."
+task :googledist do
   src, target = File.join(ZEPTO_DIST_DIR,'zepto.js'), File.join(ZEPTO_DIST_DIR,'zepto.min.js')
   google_compiler src, target
   process_minified src, target
